@@ -3,19 +3,12 @@
 # Code snippet by Ajit Kumar, Savyasachi
 # Fall 2020
 ################################################################################
-import torch.nn as nn
+
+import torch
 from torchvision import models
-
-
-# Build and return the model here based on the configuration.
-def get_model(config_data, vocab):
-    hidden_size = config_data['model']['hidden_size']
-    embedding_size = config_data['model']['embedding_size']
-    model_type = config_data['model']['model_type']
-
-    # You may add more parameters if you want
-
-    raise NotImplementedError("Model Factory Not Implemented")
+from torch.autograd import Variable
+import torch.nn as nn
+from torch.nn.utils.rnn import pack_padded_sequence
 
 class EncoderCNN(nn.Module):
     def __init__(self, embed_size):
@@ -36,3 +29,54 @@ class EncoderCNN(nn.Module):
         resnet_outputs = resnet_outputs.view(resnet_outputs.size(0), -1)
         embedding = self.embed(resnet_outputs)
         return embedding
+
+class RNNDecoder(nn.Module):
+    def __init__(self, embed_size, hidden_size, vocab_size, num_layers):
+        super().__init__()
+        self.embed_size = embed_size
+        self.hidden_size = hidden_size
+        self.vocab_size = vocab_size
+        self.num_layers = num_layers
+
+        self.embedding = nn.Embedding(self.vocab_size, self.embed_size)
+        self.stacked_lstm = nn.LSTM(input_size=self.embed_size, hidden_size=self.hidden_size, num_layers=self.num_layers)
+        self.fc = nn.Linear(self.hidden_size, self.vocab_size)
+        self.init_weights(self.fc)
+
+    def init_weights(self, m):
+        torch.nn.init.xavier_uniform_(m.weight.data)
+        torch.nn.init.normal_(m.bias.data)
+
+    def forward(self, features, captions):
+        embedded_captions = self.embedding(captions)
+        cat_captions = torch.cat((features.unsqueeze(1),embedded_captions), dim=1)
+        hidden_outputs, _ = self.stacked_lstm(cat_captions)
+        outputs = self.fc(hidden_outputs[0])
+        return outputs
+
+class EncoderDecoder(nn.Module):
+    def __init__(self, embed_size, hidden_size, vocab_size, num_layers):
+        super().__init__()
+
+        self.embed_size = embed_size
+        self.hidden_size = hidden_size
+        self.vocab_size = vocab_size
+        self.num_layers = num_layers
+
+        self.encoder = EncoderCNN(self.embed_size)
+        self.decoder = RNNDecoder(self.embed_size, self.hidden_size, self.vocab_size, self.num_layers)
+
+    def forward(self,images,captions):
+        features = self.encoder(images)
+        outputs = self.decoder(features,captions)
+        return outputs
+
+# Build and return the model here based on the configuration.
+def get_model(config_data, vocab):
+    hidden_size = config_data['model']['hidden_size']
+    embedding_size = config_data['model']['embedding_size']
+    model_type = config_data['model']['model_type']
+
+    # You may add more parameters if you want
+    model = EncoderDecoder(embedding_size, hidden_size, len(vocab), 2)
+    return model
