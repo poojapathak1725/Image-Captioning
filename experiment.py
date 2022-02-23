@@ -111,15 +111,30 @@ class Experiment(object):
         training_loss /= (i+1)
         return training_loss
 
-    # TODO: Perform one Pass on the validation set and return loss value. You may also update your best model here.
+    # Perform one Pass on the validation set and return loss value. You may also update your best model here.
     def __val(self):
         self.__model.eval()
         val_loss = 0
-
+        device = self.__device
+        
         with torch.no_grad():
             for i, (images, captions, _) in enumerate(self.__val_loader):
-                raise NotImplementedError()
+                images = images.to(device)
+                captions = captions.to(device)
+                outputs = self.__model(images,captions)
+                loss = self.__criterion(outputs.reshape(-1,outputs.shape[2]), captions.reshape(-1))
+                val_loss += loss.item()
+            val_loss /= (i+1)
 
+        # update best model
+        if not self.__val_losses or val_loss < min(self.__val_losses):
+            best_model = self.__model
+            
+        self.__val_losses.append(val_loss)
+          
+        # turn off evaluation mode
+        self.__model.train()
+            
         return val_loss
 
     # TODO: Implement your test function here. Generate sample captions and evaluate loss and
