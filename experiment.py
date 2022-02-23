@@ -7,6 +7,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torch.nn as nn
+import torch.optim as optim
 from datetime import datetime
 
 from caption_utils import *
@@ -45,13 +47,15 @@ class Experiment(object):
         self.__model = get_model(config_data, self.__vocab)
 
         # TODO: Set these Criterion and Optimizers Correctly
-        self.__criterion = None
-        self.__optimizer = None
+        self.__criterion = nn.CrossEntropyLoss(weight=None, size_average=None, ignore_index=-100, reduce=None, reduction="mean")
+        self.__optimizer = optim.Adam(self.__model.parameters(), lr = 0.01)
 
         self.__init_model()
 
         # Load Experiment Data if available
         self.__load_experiment()
+        
+        self.__device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     # Loads the experiment data if exists to resume training from last saved checkpoint.
     def __load_experiment(self):
@@ -78,6 +82,7 @@ class Experiment(object):
     def run(self):
         start_epoch = self.__current_epoch
         for epoch in range(start_epoch, self.__epochs):  # loop over the dataset multiple times
+            print("------------------------Epoch:" + str(epoch) + "------------------------")
             start_time = datetime.now()
             self.__current_epoch = epoch
             train_loss = self.__train()
@@ -90,10 +95,20 @@ class Experiment(object):
     def __train(self):
         self.__model.train()
         training_loss = 0
-
+        device = self.__device
         for i, (images, captions, _) in enumerate(self.__train_loader):
-            raise NotImplementedError()
-
+            self.__optimizer.zero_grad()
+            images = images.to(device)
+            captions = captions.to(device)
+            outputs = self.__model(images,captions)
+            loss = self.__criterion(outputs.reshape(-1,outputs.shape[2]), captions.reshape(-1))
+            training_loss += loss.item()
+            print("Loss:",loss.item())
+            
+            loss.backward()
+            self.__optimizer.step()
+            
+        training_loss /= (i+1)
         return training_loss
 
     # TODO: Perform one Pass on the validation set and return loss value. You may also update your best model here.
