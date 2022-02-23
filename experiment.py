@@ -129,8 +129,6 @@ class Experiment(object):
         # update best model
         if not self.__val_losses or val_loss < min(self.__val_losses):
             best_model = self.__model
-            
-        self.__val_losses.append(val_loss)
           
         # turn off evaluation mode
         self.__model.train()
