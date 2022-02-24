@@ -53,6 +53,18 @@ class RNNDecoder(nn.Module):
         outputs = self.fc(hidden_outputs[:,:-1,:])
         return outputs
 
+    def get_captions(self,features,states=None):
+        inputs = features.unsqueeze(1)
+        word_ids = []
+        for i in range(30):
+            ht, states = self.stacked_lstm(inputs, states)
+            output = self.fc(ht)
+            predicted = output.argmax(2)
+            word_ids.append(predicted)
+            inputs = self.embedding(predicted)
+        word_ids = torch.cat(word_ids, 1)
+        return word_ids.squeeze()
+
 class EncoderDecoder(nn.Module):
     def __init__(self, embed_size, hidden_size, vocab_size, num_layers):
         super().__init__()
@@ -69,6 +81,11 @@ class EncoderDecoder(nn.Module):
         features = self.encoder(images)
         outputs = self.decoder(features,captions)
         return outputs
+
+    def generate_captions(self, images):
+        features = self.encoder(images)
+        captions = self.decoder.get_captions(features)
+        return captions
 
 # Build and return the model here based on the configuration.
 def get_model(config_data, vocab):

@@ -144,9 +144,14 @@ class Experiment(object):
         bleu1 = 0
         bleu4 = 0
 
+        device = self.__device
+
         with torch.no_grad():
             for iter, (images, captions, img_ids) in enumerate(self.__test_loader):
-                raise NotImplementedError()
+                # just to test caption generation
+                images = images.to(device)
+                captions = captions.to(device)
+                pred_captions = self.__model.generate_captions(images)
 
         result_str = "Test Performance: Loss: {}, Perplexity: {}, Bleu1: {}, Bleu4: {}".format(test_loss,
                                                                                                bleu1,
