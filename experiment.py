@@ -135,7 +135,7 @@ class Experiment(object):
             
         return val_loss
 
-    # TODO: Implement your test function here. Generate sample captions and evaluate loss and
+    #  Implement your test function here. Generate sample captions and evaluate loss and
     #  bleu scores using the best model. Use utility functions provided to you in caption_utils.
     #  Note than you'll need image_ids and COCO object in this case to fetch all captions to generate bleu scores.
     def test(self):
@@ -147,11 +147,24 @@ class Experiment(object):
         device = self.__device
 
         with torch.no_grad():
-            for iter, (images, captions, img_ids) in enumerate(self.__test_loader):
+            # TODO test loader currently throws a memory error
+            for i, (images, captions, img_ids) in enumerate(self.__test_loader):
                 # just to test caption generation
                 images = images.to(device)
                 captions = captions.to(device)
-                pred_captions = self.__model.generate_captions(images)
+                
+                # output loss
+                outputs = self.__model(images,captions)
+                loss = self.__criterion(outputs.reshape(-1,outputs.shape[2]), captions.reshape(-1))
+                test_loss += loss.item()
+                
+                # bleu scores for caption generation
+                # TODO should use img_ids 
+                pred_caption = self.__model.generate_captions(images)
+                bleu1 += bleu1(captions, pred_caption)
+                bleu4 += bleu4(captions, pred_caption)
+                print(pred_caption)
+            test_loss /= (i+1)
 
         result_str = "Test Performance: Loss: {}, Perplexity: {}, Bleu1: {}, Bleu4: {}".format(test_loss,
                                                                                                bleu1,
