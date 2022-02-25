@@ -138,16 +138,15 @@ class Experiment(object):
     #  Implement your test function here. Generate sample captions and evaluate loss and
     #  bleu scores using the best model. Use utility functions provided to you in caption_utils.
     #  Note than you'll need image_ids and COCO object in this case to fetch all captions to generate bleu scores.
-    def test(self):
+    def test(self, mode, temperature):
         self.__model.eval()
         test_loss = 0
-        bleu1 = 0
-        bleu4 = 0
+        bl1 = 0
+        bl4 = 0
 
         device = self.__device
 
         with torch.no_grad():
-            # TODO test loader currently throws a memory error
             for i, (images, captions, img_ids) in enumerate(self.__test_loader):
                 # just to test caption generation
                 images = images.to(device)
@@ -157,21 +156,41 @@ class Experiment(object):
                 outputs = self.__model(images,captions)
                 loss = self.__criterion(outputs.reshape(-1,outputs.shape[2]), captions.reshape(-1))
                 test_loss += loss.item()
-                
-                # bleu scores for caption generation
-                # TODO should use img_ids 
-                pred_caption = self.__model.generate_captions(images)
-                bleu1 += bleu1(captions, pred_caption)
-                bleu4 += bleu4(captions, pred_caption)
-                print(pred_caption)
-            test_loss /= (i+1)
 
-        result_str = "Test Performance: Loss: {}, Perplexity: {}, Bleu1: {}, Bleu4: {}".format(test_loss,
-                                                                                               bleu1,
-                                                                                               bleu4)
+                pred_captions = self.__model.generate_captions(images,mode,temperature)
+                
+                # for each image get reference captions
+                for k, img_id in enumerate(img_ids):
+                    ann_ids = [self.__coco_test.imgToAnns[img_id][j]['id'] for j in
+                           range(0, len(self.__coco_test.imgToAnns[img_id]))]
+                    
+                    # convert reference captions to list(list(str))
+                    ref_captions = [self.__coco_test.anns[ann_id]['caption'].lower().replace('.','').split()
+                                    for ann_id in ann_ids]
+         
+                    # convert predicted caption for respective img to list(str)
+                    pred_caption = [self.__vocab.idx2word[word.item()] 
+                                    for word in pred_captions[k]]
+                
+                    # filter tokens
+                    for remove_word in ['<pad>', '<start>', '<end>', '<unk>']:
+                        if remove_word in pred_caption:
+                            pred_caption.remove(remove_word)
+         
+                    # calculate bleu1 and bleu4 scores
+                    bl1 += bleu1(ref_captions, pred_caption)
+                    bl4 += bleu4(ref_captions, pred_caption)
+        
+            test_loss /= (i+1) 
+            bl1 /= (k+1)*(i+1)
+            bl4 /= (k+1)*(i+1)
+                
+        result_str = "Test Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(test_loss,
+                                                                               bl1,
+                                                                               bl4)
         self.__log(result_str)
 
-        return test_loss, bleu1, bleu4
+        return test_loss, bl1, bl4
 
     def __save_model(self):
         root_model_path = os.path.join(self.__experiment_dir, 'latest_model.pt')

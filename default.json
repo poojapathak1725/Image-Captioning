@@ -10,7 +10,7 @@
     "vocabulary_threshold": 2,
     "img_size": 256,
     "batch_size": 64,
-    "num_workers": 8
+    "num_workers": 1
   },
   "experiment": {
     "num_epochs": 10,

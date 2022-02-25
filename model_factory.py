@@ -53,13 +53,19 @@ class RNNDecoder(nn.Module):
         outputs = self.fc(hidden_outputs[:,:-1,:])
         return outputs
 
-    def get_captions(self,features,states=None):
+    def get_captions(self,features,mode,temperature,states=None):
         inputs = features.unsqueeze(1)
         word_ids = []
         for i in range(30):
             ht, states = self.stacked_lstm(inputs, states)
             output = self.fc(ht)
-            predicted = output.argmax(2)
+            if mode == "deterministic":
+                predicted = output.argmax(2)
+            elif mode == "stochastic":
+                probs = F.softmax(output.div(temperature).squeeze(0).squeeze(0), dim=2)
+                predicted = torch.multinomial(probs.data, 1)
+            else:
+                raise RuntimeError('Incorrect mode given.')
             word_ids.append(predicted)
             inputs = self.embedding(predicted)
         word_ids = torch.cat(word_ids, 1)
@@ -82,9 +88,9 @@ class EncoderDecoder(nn.Module):
         outputs = self.decoder(features,captions)
         return outputs
 
-    def generate_captions(self, images):
+    def generate_captions(self, images, mode, temperature=1):
         features = self.encoder(images)
-        captions = self.decoder.get_captions(features)
+        captions = self.decoder.get_captions(features, mode, temperature)
         return captions
 
 # Build and return the model here based on the configuration.
