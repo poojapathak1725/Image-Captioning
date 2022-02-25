@@ -8,6 +8,7 @@ import torch
 from torchvision import models
 from torch.autograd import Variable
 import torch.nn as nn
+import torch.nn.functional as F
 
 class EncoderCNN(nn.Module):
     def __init__(self, embed_size):
