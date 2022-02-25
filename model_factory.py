@@ -33,14 +33,16 @@ class EncoderCNN(nn.Module):
         return embedding
 
 class RNNDecoder(nn.Module):
-    def __init__(self, embed_size, hidden_size, vocab_size, num_layers):
+    def __init__(self, embed_size, hidden_size, vocab_size, num_layers, model_type):
         super().__init__()
         self.embed_size = embed_size
         self.hidden_size = hidden_size
         self.vocab_size = vocab_size
         self.num_layers = num_layers
+        self.model_type = model_type
 
         self.embedding = nn.Embedding(self.vocab_size, self.embed_size)
+        self.vanilla_RNN = nn.RNN(input_size=self.embed_size, hidden_size=self.hidden_size, num_layers=self.num_layers, nonlinearity = 'relu', batch_first = True)
         self.stacked_lstm = nn.LSTM(input_size=self.embed_size, hidden_size=self.hidden_size, num_layers=self.num_layers, batch_first=True)
         self.fc = nn.Linear(self.hidden_size, self.vocab_size)
         self.init_weights(self.fc)
@@ -52,7 +54,10 @@ class RNNDecoder(nn.Module):
     def forward(self, features, captions):
         embedded_captions = self.embedding(captions)
         cat_captions = torch.cat((features.unsqueeze(1),embedded_captions), dim=1)
-        hidden_outputs, _ = self.stacked_lstm(cat_captions)
+        if self.model_type == 'LSTM':
+            hidden_outputs, _ = self.stacked_lstm(cat_captions)
+        elif self.model_type == 'RNN':
+            hidden_outputs, _ = self.vanilla_RNN(cat_captions)
         outputs = self.fc(hidden_outputs[:,:-1,:])
         return outputs
 
@@ -60,7 +65,10 @@ class RNNDecoder(nn.Module):
         inputs = features.unsqueeze(1)
         word_ids = []
         for i in range(30):
-            ht, states = self.stacked_lstm(inputs, states)
+            if self.model_type == 'LSTM':
+                ht, states = self.stacked_lstm(inputs, states)
+            elif self.model_type == 'RNN':
+                ht, states = self.vanilla_RNN(inputs, states)
             output = self.fc(ht)
             if mode == "deterministic":
                 predicted = output.argmax(2)
@@ -75,16 +83,17 @@ class RNNDecoder(nn.Module):
         return word_ids.squeeze()
 
 class EncoderDecoder(nn.Module):
-    def __init__(self, embed_size, hidden_size, vocab_size, num_layers):
+    def __init__(self, embed_size, hidden_size, vocab_size, num_layers, model_type):
         super().__init__()
 
         self.embed_size = embed_size
         self.hidden_size = hidden_size
         self.vocab_size = vocab_size
         self.num_layers = num_layers
+        self.model_type = model_type
 
         self.encoder = EncoderCNN(self.embed_size)
-        self.decoder = RNNDecoder(self.embed_size, self.hidden_size, self.vocab_size, self.num_layers)
+        self.decoder = RNNDecoder(self.embed_size, self.hidden_size, self.vocab_size, self.num_layers, self.model_type)
 
     def forward(self,images,captions):
         features = self.encoder(images)
@@ -103,5 +112,5 @@ def get_model(config_data, vocab):
     model_type = config_data['model']['model_type']
 
     # You may add more parameters if you want
-    model = EncoderDecoder(embedding_size, hidden_size, len(vocab), 2)
+    model = EncoderDecoder(embedding_size, hidden_size, len(vocab), 2,model_type)
     return model
