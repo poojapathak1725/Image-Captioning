@@ -15,6 +15,8 @@ class EncoderCNN(nn.Module):
         resnet = models.resnet50(pretrained=True)
         last_layer = list(resnet.children())[:-1] 
         self.resnet = nn.Sequential(*last_layer)
+        for params in self.resnet.parameters():
+            params.require_grad = False
         self.embed = nn.Linear(resnet.fc.in_features, embed_size)
         self.initialize_weights()
         
@@ -38,7 +40,7 @@ class RNNDecoder(nn.Module):
         self.num_layers = num_layers
 
         self.embedding = nn.Embedding(self.vocab_size, self.embed_size)
-        self.stacked_lstm = nn.LSTM(input_size=self.embed_size, hidden_size=self.hidden_size, num_layers=self.num_layers)
+        self.stacked_lstm = nn.LSTM(input_size=self.embed_size, hidden_size=self.hidden_size, num_layers=self.num_layers, batch_first=True)
         self.fc = nn.Linear(self.hidden_size, self.vocab_size)
         self.init_weights(self.fc)
 

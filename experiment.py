@@ -17,7 +17,6 @@ from dataset_factory import get_datasets
 from file_utils import *
 from model_factory import get_model
 
-
 # Class to encapsulate a neural experiment.
 # The boilerplate code to setup the experiment, log stats, checkpoints and plotting have been provided to you.
 # You only need to implement the main training logic of your experiment and implement train, val and test methods.
@@ -48,7 +47,7 @@ class Experiment(object):
 
         # TODO: Set these Criterion and Optimizers Correctly
         self.__criterion = nn.CrossEntropyLoss(weight=None, size_average=None, ignore_index=-100, reduce=None, reduction="mean")
-        self.__optimizer = optim.Adam(self.__model.parameters(), lr = 0.01)
+        self.__optimizer = optim.Adam(self.__model.parameters(), lr = 5e-4)
 
         self.__init_model()
 
@@ -87,9 +86,9 @@ class Experiment(object):
             self.__current_epoch = epoch
             train_loss = self.__train()
             val_loss = self.__val()
-            self.__record_stats(train_loss, val_loss)
-            self.__log_epoch_stats(start_time)
-            self.__save_model()
+            # self.__record_stats(train_loss, val_loss)
+            # self.__log_epoch_stats(start_time)
+            # self.__save_model()
 
     # TODO: Perform one training iteration on the whole dataset and return loss value
     def __train(self):
@@ -123,6 +122,7 @@ class Experiment(object):
                 captions = captions.to(device)
                 outputs = self.__model(images,captions)
                 loss = self.__criterion(outputs.reshape(-1,outputs.shape[2]), captions.reshape(-1))
+                print("Val Loss:",loss.item())
                 val_loss += loss.item()
             val_loss /= (i+1)
 
@@ -135,7 +135,7 @@ class Experiment(object):
             
         return val_loss
 
-    #  Implement your test function here. Generate sample captions and evaluate loss and
+    # TODO: Implement your test function here. Generate sample captions and evaluate loss and
     #  bleu scores using the best model. Use utility functions provided to you in caption_utils.
     #  Note than you'll need image_ids and COCO object in this case to fetch all captions to generate bleu scores.
     def test(self, mode, temperature):
