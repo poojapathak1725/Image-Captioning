@@ -181,7 +181,7 @@ class Experiment(object):
                     bl1 += bleu1(ref_captions, pred_caption)
                     bl4 += bleu4(ref_captions, pred_caption)
         
-            test_loss /= (i+1) 
+            test_loss /= (i+1)
             bl1 /= (k+1)*(i+1)
             bl4 /= (k+1)*(i+1)
                 
