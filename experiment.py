@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from datetime import datetime
+from PIL import Image
 
 from caption_utils import *
 from constants import ROOT_STATS_DIR
@@ -86,9 +87,9 @@ class Experiment(object):
             self.__current_epoch = epoch
             train_loss = self.__train()
             val_loss = self.__val()
-            # self.__record_stats(train_loss, val_loss)
-            # self.__log_epoch_stats(start_time)
-            # self.__save_model()
+            self.__record_stats(train_loss, val_loss)
+            self.__log_epoch_stats(start_time)
+            self.__save_model()
 
     # TODO: Perform one training iteration on the whole dataset and return loss value
     def __train(self):
@@ -138,7 +139,7 @@ class Experiment(object):
     # TODO: Implement your test function here. Generate sample captions and evaluate loss and
     #  bleu scores using the best model. Use utility functions provided to you in caption_utils.
     #  Note than you'll need image_ids and COCO object in this case to fetch all captions to generate bleu scores.
-    def test(self, mode, temperature):
+    def test(self, mode="stochastic", temperature=0.1):
         self.__model.eval()
         test_loss = 0
         bl1 = 0
@@ -180,6 +181,32 @@ class Experiment(object):
                     # calculate bleu1 and bleu4 scores
                     bl1 += bleu1(ref_captions, pred_caption)
                     bl4 += bleu4(ref_captions, pred_caption)
+                    
+                    # saving 1st image and caption of 1st 10 batches 
+                    if k == 0 and i < 10:
+                        # get caption as string
+                        ik_caption = "".join(p + " " for p in pred_caption)[:-1]
+                        
+                        # process image to save
+                        image = images[0].permute(1,2,0).cpu().detach().numpy()
+                        image = image * np.array((0.229,0.224,0.225)) + np.array((0.485,0.456,0.406))
+                        image *= 255.0
+                        img = Image.fromarray(image.astype(np.uint8))
+                        
+                        # create files for saving the image and captions
+                        img_name = str(self.__current_epoch) + "_" + str(i) + "_test.png"
+                        f_name = str(self.__current_epoch) + "_" + str(i) + "_test.txt"
+                        img_dir = os.path.join(self.__experiment_dir, "test_captions")
+                        img_path = os.path.join(img_dir, img_name)
+                        f_path = os.path.join(img_dir, f_name)
+                        
+                        if not os.path.exists(img_dir):
+                            os.mkdir(img_dir)
+                        img.save(img_path)
+                        
+                        with open(f_path,"w") as f:
+                            f.write(ik_caption)
+                        f.close()
         
             test_loss /= (i+1)
             bl1 /= (k+1)*(i+1)
