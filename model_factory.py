@@ -73,7 +73,7 @@ class RNNDecoder(nn.Module):
             if mode == "deterministic":
                 predicted = output.argmax(2)
             elif mode == "stochastic":
-                probs = F.softmax(output.div(temperature).squeeze(0).squeeze(0), dim=2)
+                probs = F.softmax(output.div(temperature).squeeze(), dim=1)
                 predicted = torch.multinomial(probs.data, 1)
             else:
                 raise RuntimeError('Incorrect mode given.')
