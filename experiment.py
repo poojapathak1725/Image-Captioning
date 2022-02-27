@@ -148,6 +148,7 @@ class Experiment(object):
         test_loss = 0
         bl1 = 0
         bl4 = 0
+        tot_capts = 0
 
         device = self.__device
 
@@ -213,11 +214,12 @@ class Experiment(object):
                         with open(f_path,"w") as f:
                             f.write(ik_caption)
                         f.close()
+                tot_capts += k
         
             test_loss /= (i+1)
-            bl1 /= (k+1)*(i+1)
-            bl4 /= (k+1)*(i+1)
-                
+            bl1 /= tot_capts
+            bl4 /= tot_capts
+
         result_str = "Test Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(test_loss,
                                                                                bl1,
                                                                                bl4)
