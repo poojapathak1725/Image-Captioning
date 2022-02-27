@@ -109,6 +109,7 @@ class Experiment(object):
             self.__optimizer.step()
             
         training_loss /= (i+1)
+        print("Average Training Loss:", training_loss)
         return training_loss
 
     # Perform one Pass on the validation set and return loss value. You may also update your best model here.
@@ -126,10 +127,13 @@ class Experiment(object):
                 print("Val Loss:",loss.item())
                 val_loss += loss.item()
             val_loss /= (i+1)
+            print("Average Val Loss:", val_loss)
 
         # update best model
         if not self.__val_losses or val_loss < min(self.__val_losses):
-            best_model = self.__model
+            self.__best_model = self.__model
+            best_model_path = os.path.join(self.__experiment_dir, "best_model.pt")
+            torch.save(self.__best_model, best_model_path)
           
         # turn off evaluation mode
         self.__model.train()
@@ -149,16 +153,18 @@ class Experiment(object):
 
         with torch.no_grad():
             for i, (images, captions, img_ids) in enumerate(self.__test_loader):
+                print("Testing Batch " + str(i))
+
                 # just to test caption generation
                 images = images.to(device)
                 captions = captions.to(device)
                 
                 # output loss
-                outputs = self.__model(images,captions)
+                outputs = self.__best_model(images,captions)
                 loss = self.__criterion(outputs.reshape(-1,outputs.shape[2]), captions.reshape(-1))
                 test_loss += loss.item()
 
-                pred_captions = self.__model.generate_captions(images,mode,temperature)
+                pred_captions = self.__best_model.generate_captions(images,mode,temperature)
                 
                 # for each image get reference captions
                 for k, img_id in enumerate(img_ids):
@@ -176,7 +182,7 @@ class Experiment(object):
                     # filter tokens
                     for remove_word in ['<pad>', '<start>', '<end>', '<unk>']:
                         if remove_word in pred_caption:
-                            pred_caption.remove(remove_word)
+                            pred_caption = list(filter((remove_word).__ne__, pred_caption))
          
                     # calculate bleu1 and bleu4 scores
                     bl1 += bleu1(ref_captions, pred_caption)
