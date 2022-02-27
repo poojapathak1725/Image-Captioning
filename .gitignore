@@ -6,6 +6,7 @@ data/
 savedVocab
 experiment_data/
 .ipynb_checkpoints/
+nohup.out
 
 # C extensions
 *.so

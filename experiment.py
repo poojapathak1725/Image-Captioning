@@ -41,7 +41,11 @@ class Experiment(object):
         self.__current_epoch = 0
         self.__training_losses = []
         self.__val_losses = []
-        self.__best_model = None  # Save your best model in this field and use this in test method.
+        
+        if os.path.exists(self.__experiment_dir):
+            self.__best_model = torch.load(self.__experiment_dir+'/best_model.pt')
+        else:
+            self.__best_model = None  # Save your best model in this field and use this in test method.
 
         # Init Model
         self.__model = get_model(config_data, self.__vocab)
@@ -173,11 +177,12 @@ class Experiment(object):
                            range(0, len(self.__coco_test.imgToAnns[img_id]))]
                     
                     # convert reference captions to list(list(str))
-                    ref_captions = [self.__coco_test.anns[ann_id]['caption'].lower().replace('.','').split()
+                    punc = '''!()-[]{};:'"\,./?@#$%^&*_~'''
+                    ref_captions = [self.__coco_test.anns[ann_id]['caption'].lower().replace(punc,'').split()
                                     for ann_id in ann_ids]
          
                     # convert predicted caption for respective img to list(str)
-                    pred_caption = [self.__vocab.idx2word[word.item()] 
+                    pred_caption = [self.__vocab.idx2word[word.item()].lower().replace(punc,'')
                                     for word in pred_captions[k]]
                 
                     # filter tokens
