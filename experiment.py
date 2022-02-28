@@ -178,18 +178,25 @@ class Experiment(object):
                     
                     # convert reference captions to list(list(str))
                     punc = '''!()-[]{};:'"\,./?@#$%^&*_~'''
-                    ref_captions = [self.__coco_test.anns[ann_id]['caption'].lower().replace(punc,'').split()
-                                    for ann_id in ann_ids]
-         
+                    ref_captions = []
+                    for ann_id in ann_ids:
+                        c = self.__coco_test.anns[ann_id]["caption"].lower()
+                        for p in punc:
+                            c = c.replace(p,"")
+                        ref_captions.append(c.split())
+                    
                     # convert predicted caption for respective img to list(str)
-                    pred_caption = [self.__vocab.idx2word[word.item()].lower().replace(punc,'')
-                                    for word in pred_captions[k]]
-                
+                    pred_caption = [self.__vocab.idx2word[word.item()].lower() for word in pred_captions[k]]
+                    
+                    for i in range(len(pred_caption)):
+                        for p in punc:
+                            pred_caption[i] = pred_caption[i].replace(p,"")
+         
                     # filter tokens
-                    for remove_word in ['<pad>', '<start>', '<end>', '<unk>']:
+                    for remove_word in ['<pad>', '<start>', '<end>', '<unk>', '']:
                         if remove_word in pred_caption:
                             pred_caption = list(filter((remove_word).__ne__, pred_caption))
-         
+                    
                     # calculate bleu1 and bleu4 scores
                     bl1 += bleu1(ref_captions, pred_caption)
                     bl4 += bleu4(ref_captions, pred_caption)
