@@ -188,9 +188,9 @@ class Experiment(object):
                     # convert predicted caption for respective img to list(str)
                     pred_caption = [self.__vocab.idx2word[word.item()].lower() for word in pred_captions[k]]
                     
-                    for i in range(len(pred_caption)):
+                    for pi in range(len(pred_caption)):
                         for p in punc:
-                            pred_caption[i] = pred_caption[i].replace(p,"")
+                            pred_caption[pi] = pred_caption[pi].replace(p,"")
          
                     # filter tokens
                     for remove_word in ['<pad>', '<start>', '<end>', '<unk>', '']:
