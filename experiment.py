@@ -185,8 +185,6 @@ class Experiment(object):
                             c = c.replace(p,"")
                         ref_captions.append(c.split())
                     
-                    ref_caption = ref_captions[0]
-                    
                     # convert predicted caption for respective img to list(str)
                     pred_caption = [self.__vocab.idx2word[word.item()].lower() for word in pred_captions[k]]
                     
@@ -207,7 +205,9 @@ class Experiment(object):
                     if k == 0 and i < 10:
                         # get caption as string
                         ik_caption = "".join(p + " " for p in pred_caption)[:-1]
-                        ik_ref_caption = "".join(r + " " for r in ref_caption)[:-1]
+                        ik_ref_caption = []
+                        for ref_caption in ref_captions:
+                            ik_ref_caption.append("".join(r + " " for r in ref_caption)[:-1] + "\n")
                         
                         # process image to save
                         image = images[0].permute(1,2,0).cpu().detach().numpy()
@@ -233,7 +233,7 @@ class Experiment(object):
                         f.close()
 
                         with open(ref_path, "w") as f:
-                            f.write(ik_ref_caption)
+                            f.writelines(ik_ref_caption)
                         f.close()
                 tot_capts += k
         
