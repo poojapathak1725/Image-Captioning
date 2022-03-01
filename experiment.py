@@ -185,6 +185,8 @@ class Experiment(object):
                             c = c.replace(p,"")
                         ref_captions.append(c.split())
                     
+                    ref_caption = ref_captions[0]
+                    
                     # convert predicted caption for respective img to list(str)
                     pred_caption = [self.__vocab.idx2word[word.item()].lower() for word in pred_captions[k]]
                     
@@ -205,6 +207,7 @@ class Experiment(object):
                     if k == 0 and i < 10:
                         # get caption as string
                         ik_caption = "".join(p + " " for p in pred_caption)[:-1]
+                        ik_ref_caption = "".join(r + " " for r in ref_caption)[:-1]
                         
                         # process image to save
                         image = images[0].permute(1,2,0).cpu().detach().numpy()
@@ -215,9 +218,11 @@ class Experiment(object):
                         # create files for saving the image and captions
                         img_name = str(self.__current_epoch) + "_" + str(i) + "_test.png"
                         f_name = str(self.__current_epoch) + "_" + str(i) + "_test.txt"
+                        ref_name = str(self.__current_epoch) + "_" + str(i) + "_ref_test.txt"
                         img_dir = os.path.join(self.__experiment_dir, "test_captions")
                         img_path = os.path.join(img_dir, img_name)
                         f_path = os.path.join(img_dir, f_name)
+                        ref_path = os.path.join(img_dir, ref_name)
                         
                         if not os.path.exists(img_dir):
                             os.mkdir(img_dir)
@@ -225,6 +230,10 @@ class Experiment(object):
                         
                         with open(f_path,"w") as f:
                             f.write(ik_caption)
+                        f.close()
+
+                        with open(ref_path, "w") as f:
+                            f.write(ik_ref_caption)
                         f.close()
                 tot_capts += k
         
