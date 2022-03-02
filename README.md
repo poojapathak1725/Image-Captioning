@@ -1,6 +1,15 @@
 # Image Captioning
 
-* TODO: Details specific to the student's implementation to be added by the student 
+* To run the model with the default configurations (512 hidden dimensions, 300 embedding size, stochastic caption generation, 0.1 temperature, learning rate = 5e-4), run `python3 main.py`
+Tune the hyperparameters by editing the `default.json` file:
+- `num_epochs` to set the number of epochs
+- `learning_rate` to change the learning rate
+- `hidden_size` to set the number of hidden units in the LSTM
+- `embedding_size` to set the embedding size for the words
+- `model_type` set to "LSTM" to use LSTMs, else set to "RNN" to use Vanilla RNNs
+- `max_length` to set the maximum size of a generated caption
+- `deterministic` set to `True` to use deterministic caption generation and `False` for stochastic caption generation
+- `temperature` to set the temperature for stochastic caption generation when using weighted softmax   
 
 ## Usage
 
