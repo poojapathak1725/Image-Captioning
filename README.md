@@ -13,7 +13,7 @@ Tune the hyperparameters by editing the `default.json` file:
 
 ## Usage
 
-* Define the configuration for your experiment. See `default.json` to see the structure and available options. You are free to modify and restructure the configuration as per your needs.
+* Define the configurations for your experiment. See `default.json` to see the structure and available options. You are free to modify and restructure the configuration as per your needs.
 * Implement factories to return project specific models, datasets based on config. Add more flags as per requirement in the config.
 * Implement `experiment.py` based on the project requirements.
 * After defining the configuration (say `my_exp.json`) - simply run `python3 main.py my_exp` to start the experiment
